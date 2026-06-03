@@ -66,8 +66,9 @@ clean lines as false-positive traps. Public via the repository link below.
 
 ## 6. Links
 
-- **Repository (public link):** _<fill after `gh repo create` / push>_
-- **Dataset:** `harness/cases/eval_cases.yaml` in the repo above.
+- **Repository (public link):** https://github.com/franciscds/smart-code-reviewer
+- **Dataset (public):** [`harness/cases/eval_cases.yaml`](https://github.com/franciscds/smart-code-reviewer/blob/main/harness/cases/eval_cases.yaml) — self-created, no confidential data.
+- **Harness report:** [`reports/eval_report.md`](https://github.com/franciscds/smart-code-reviewer/blob/main/reports/eval_report.md)
 - **Run it:** `pip install -r requirements.txt`, set `ANTHROPIC_API_KEY` in `.env`,
   then `streamlit run app.py` and `python -m harness.run_eval`.
 
@@ -76,4 +77,4 @@ clean lines as false-positive traps. Public via the repository link below.
 - [x] Prototype + prompt (`PROMPT.md`, `app.py`, screenshots in `docs/`)
 - [x] 100-word summary (above)
 - [x] Public dataset (`eval_cases.yaml`, self-created)
-- [ ] Public link (push repo to GitHub — see §6)
+- [x] Public link (https://github.com/franciscds/smart-code-reviewer)
