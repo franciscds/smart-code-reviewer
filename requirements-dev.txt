@@ -1,0 +1,11 @@
+# Dev-only tooling — not needed to run the reviewer, harness, or UI.
+# Used by scripts/capture_screenshots.py to snapshot the Streamlit UI into docs/.
+#
+#   pip install -r requirements-dev.txt
+#   python -m playwright install chromium
+#   streamlit run app.py            # in one terminal
+#   python -m scripts.capture_screenshots
+#
+# Pin note: greenlet 3.0.3 (pulled by playwright 1.47) ships a prebuilt cp39 wheel;
+# newer greenlet builds from source and needs a C++ toolchain on Windows/Python 3.9.
+playwright==1.47.0
