@@ -1,0 +1,702 @@
+{
+  "generated_at": "2026-06-03 16:18",
+  "model": "claude-sonnet-4-6",
+  "num_cases": 6,
+  "aggregate": {
+    "total_expected": 16,
+    "matched": 12,
+    "weighted_total": 26,
+    "weighted_matched": 22,
+    "total_findings": 31,
+    "unmatched_findings": 19,
+    "should_not_flag_hits": 3,
+    "detection_rate": 0.75,
+    "severity_weighted_recall": 0.8461538461538461,
+    "false_positive_signal": 0.6129032258064516,
+    "by_dimension": {
+      "readability": {
+        "total_expected": 6,
+        "matched": 4,
+        "total_findings": 11,
+        "unmatched_findings": 7,
+        "detection_rate": 0.6666666666666666,
+        "false_positive_signal": 0.6363636363636364
+      },
+      "structure": {
+        "total_expected": 3,
+        "matched": 2,
+        "total_findings": 4,
+        "unmatched_findings": 2,
+        "detection_rate": 0.6666666666666666,
+        "false_positive_signal": 0.5
+      },
+      "maintainability": {
+        "total_expected": 7,
+        "matched": 6,
+        "total_findings": 16,
+        "unmatched_findings": 10,
+        "detection_rate": 0.8571428571428571,
+        "false_positive_signal": 0.625
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "payment_secrets",
+      "description": "Hardcoded credential, bare except, magic numbers in a payment path.",
+      "score": {
+        "total_expected": 4,
+        "matched": 3,
+        "weighted_total": 8,
+        "weighted_matched": 7,
+        "total_findings": 7,
+        "unmatched_findings": 4,
+        "should_not_flag_hits": 0,
+        "detection_rate": 0.75,
+        "severity_weighted_recall": 0.875,
+        "false_positive_signal": 0.5714285714285714,
+        "by_dimension": {
+          "readability": {
+            "total_expected": 1,
+            "matched": 1,
+            "total_findings": 2,
+            "unmatched_findings": 1,
+            "detection_rate": 1.0,
+            "false_positive_signal": 0.5
+          },
+          "structure": {
+            "total_expected": 0,
+            "matched": 0,
+            "total_findings": 1,
+            "unmatched_findings": 1,
+            "detection_rate": null,
+            "false_positive_signal": 1.0
+          },
+          "maintainability": {
+            "total_expected": 3,
+            "matched": 2,
+            "total_findings": 4,
+            "unmatched_findings": 2,
+            "detection_rate": 0.6666666666666666,
+            "false_positive_signal": 0.5
+          }
+        }
+      },
+      "missed": [
+        {
+          "dimension": "maintainability",
+          "tag": "missing_type_hints",
+          "severity": "low",
+          "lines": [
+            5
+          ]
+        }
+      ],
+      "findings": [
+        {
+          "dimension": "maintainability",
+          "severity": "high",
+          "lines": [
+            6
+          ],
+          "issue": "A live API key is hardcoded directly in the source code, exposing a credential that could be committed to version control.",
+          "suggestion": "Load the API key from an environment variable or secrets manager, e.g. os.environ['PAYMENT_API_KEY'].",
+          "tag": "hardcoded_config"
+        },
+        {
+          "dimension": "maintainability",
+          "severity": "high",
+          "lines": [
+            11
+          ],
+          "issue": "The payment API URL is hardcoded as a string literal, making it impossible to switch environments without modifying source code; additionally, the API key is passed in the JSON body instead of a secure Authorization header, and there is no response status check before calling r.json().",
+          "suggestion": "Move the URL to an environment variable, pass the API key via an Authorization header, and call r.raise_for_status() before r.json().",
+          "tag": "hardcoded_config"
+        },
+        {
+          "dimension": "maintainability",
+          "severity": "high",
+          "lines": [
+            13,
+            14
+          ],
+          "issue": "A bare 'except' clause catches all exceptions including KeyboardInterrupt and SystemExit, and silently returns None, hiding all failure information from the caller.",
+          "suggestion": "Catch specific exceptions (e.g. requests.exceptions.RequestException), log the error, and either re-raise or return a structured error indicator so callers can distinguish success from failure.",
+          "tag": "no_error_handling"
+        },
+        {
+          "dimension": "readability",
+          "severity": "medium",
+          "lines": [
+            8,
+            9
+          ],
+          "issue": "The literals 10000 and 100 are unexplained thresholds with no indication of their business meaning (currency units, discount policy, etc.).",
+          "suggestion": "Define named constants such as LARGE_ORDER_THRESHOLD = 10000 and LARGE_ORDER_DISCOUNT = 100 with comments explaining the business rules.",
+          "tag": "magic_number"
+        },
+        {
+          "dimension": "readability",
+          "severity": "low",
+          "lines": [
+            11
+          ],
+          "issue": "The variable 'r' is a single-letter name that gives no indication it holds an HTTP response.",
+          "suggestion": "Rename to 'response' for clarity.",
+          "tag": "naming"
+        },
+        {
+          "dimension": "structure",
+          "severity": "medium",
+          "lines": [
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "issue": "process_payment mixes business logic (tax calculation, discount application) with external I/O (HTTP call), making each concern hard to test independently.",
+          "suggestion": "Extract tax and discount calculation into a separate pure function and keep process_payment focused solely on the API interaction.",
+          "tag": "poor_separation"
+        },
+        {
+          "dimension": "maintainability",
+          "severity": "medium",
+          "lines": [
+            5
+          ],
+          "issue": "process_payment has no docstring and no type hints on its parameters or return type, making correct usage and expected behaviour unclear.",
+          "suggestion": "Add a docstring describing parameters, return value, and possible exceptions, and add type hints: def process_payment(amount: float, user: str) -> dict | None.",
+          "tag": "no_docstring"
+        }
+      ],
+      "summary": "The function mixes hardcoded credentials and URLs with business logic, uses a bare except clause that silently swallows all errors, and lacks type hints and a docstring, making it fragile and difficult to maintain.",
+      "positive_note": "The tax rate is correctly extracted into a module-level named constant (TAX) rather than being inlined repeatedly, which is a good instinct toward avoiding magic numbers."
+    },
+    {
+      "id": "deep_nesting",
+      "description": "Four levels of nesting and a compound condition.",
+      "score": {
+        "total_expected": 3,
+        "matched": 2,
+        "weighted_total": 4,
+        "weighted_matched": 3,
+        "total_findings": 8,
+        "unmatched_findings": 6,
+        "should_not_flag_hits": 0,
+        "detection_rate": 0.6666666666666666,
+        "severity_weighted_recall": 0.75,
+        "false_positive_signal": 0.75,
+        "by_dimension": {
+          "readability": {
+            "total_expected": 0,
+            "matched": 0,
+            "total_findings": 3,
+            "unmatched_findings": 3,
+            "detection_rate": null,
+            "false_positive_signal": 1.0
+          },
+          "structure": {
+            "total_expected": 2,
+            "matched": 1,
+            "total_findings": 2,
+            "unmatched_findings": 1,
+            "detection_rate": 0.5,
+            "false_positive_signal": 0.5
+          },
+          "maintainability": {
+            "total_expected": 1,
+            "matched": 1,
+            "total_findings": 3,
+            "unmatched_findings": 2,
+            "detection_rate": 1.0,
+            "false_positive_signal": 0.6666666666666666
+          }
+        }
+      },
+      "missed": [
+        {
+          "dimension": "structure",
+          "tag": "complex_conditional",
+          "severity": "low",
+          "lines": [
+            6
+          ]
+        }
+      ],
+      "findings": [
+        {
+          "dimension": "readability",
+          "severity": "high",
+          "lines": [
+            6
+          ],
+          "issue": "`u.get('age') and u['age'] > 18` silently treats `age=0` as falsy due to truthiness evaluation, which is almost certainly unintentional and will incorrectly exclude users with age 0.",
+          "suggestion": "Use an explicit None check: `u.get('age') is not None and u['age'] > 18` to correctly handle edge-case age values.",
+          "tag": "missing_comment"
+        },
+        {
+          "dimension": "maintainability",
+          "severity": "high",
+          "lines": [
+            6,
+            8,
+            10
+          ],
+          "issue": "`u['age']` on line 6 and `u['name']` on lines 8 and 10 use direct key access without guards, risking `KeyError` if those keys are absent in a user dict.",
+          "suggestion": "Use `u.get('age')` and `u.get('name', '')` consistently, or validate required keys upfront before processing.",
+          "tag": "no_error_handling"
+        },
+        {
+          "dimension": "structure",
+          "severity": "medium",
+          "lines": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "issue": "Four consecutive nested `if` blocks reach a nesting depth of 5, making the control flow hard to follow and test.",
+          "suggestion": "Flatten the logic using guard clauses (early `continue`) or combine compatible conditions with `and` to reduce nesting depth.",
+          "tag": "deep_nesting"
+        },
+        {
+          "dimension": "readability",
+          "severity": "medium",
+          "lines": [
+            6
+          ],
+          "issue": "The literal `18` is an unexplained magic number whose business meaning is not clear from context.",
+          "suggestion": "Define a named constant, e.g. `MINIMUM_AGE = 18`, and reference it in the condition.",
+          "tag": "magic_number"
+        },
+        {
+          "dimension": "readability",
+          "severity": "medium",
+          "lines": [
+            7
+          ],
+          "issue": "The literal string `'AE'` is a magic string with no explanation of what country or rule it represents.",
+          "suggestion": "Define a named constant, e.g. `UPPERCASE_NAME_COUNTRY = 'AE'`, or add a comment explaining its significance.",
+          "tag": "magic_number"
+        },
+        {
+          "dimension": "structure",
+          "severity": "low",
+          "lines": [
+            8,
+            10
+          ],
+          "issue": "Lines 8 and 10 duplicate the `result.append(u['name']...)` pattern, differing only by the `.upper()` call.",
+          "suggestion": "Consolidate into a single append: `name = u.get('name', ''); result.append(name.upper() if u.get('country') == 'AE' else name)`.",
+          "tag": "duplication"
+        },
+        {
+          "dimension": "maintainability",
+          "severity": "low",
+          "lines": [
+            1
+          ],
+          "issue": "`categorize` has no docstring explaining its purpose, expected input shape, or return value.",
+          "suggestion": "Add a docstring describing the function's intent, the expected structure of `users`, and what the returned list contains.",
+          "tag": "no_docstring"
+        },
+        {
+          "dimension": "maintainability",
+          "severity": "low",
+          "lines": [
+            1
+          ],
+          "issue": "`categorize` has no type hints on its parameter or return value, reducing IDE support and readability.",
+          "suggestion": "Add type hints, e.g. `def categorize(users: list[dict]) -> list[str]:`.",
+          "tag": "missing_type_hints"
+        }
+      ],
+      "summary": "The function has a critical implicit-falsy bug on the age check, unguarded key accesses that risk KeyError, and deep nesting that obscures the logic flow.",
+      "positive_note": "The function is concise and self-contained, and the use of `u.get('active')` and `u is not None` shows some awareness of defensive checks that just needs to be applied consistently throughout."
+    },
+    {
+      "id": "duplication_naming",
+      "description": "Cryptic names and duplicated computation.",
+      "score": {
+        "total_expected": 3,
+        "matched": 3,
+        "weighted_total": 5,
+        "weighted_matched": 5,
+        "total_findings": 7,
+        "unmatched_findings": 4,
+        "should_not_flag_hits": 1,
+        "detection_rate": 1.0,
+        "severity_weighted_recall": 1.0,
+        "false_positive_signal": 0.5714285714285714,
+        "by_dimension": {
+          "readability": {
+            "total_expected": 2,
+            "matched": 2,
+            "total_findings": 3,
+            "unmatched_findings": 1,
+            "detection_rate": 1.0,
+            "false_positive_signal": 0.3333333333333333
+          },
+          "structure": {
+            "total_expected": 1,
+            "matched": 1,
+            "total_findings": 1,
+            "unmatched_findings": 0,
+            "detection_rate": 1.0,
+            "false_positive_signal": 0.0
+          },
+          "maintainability": {
+            "total_expected": 0,
+            "matched": 0,
+            "total_findings": 3,
+            "unmatched_findings": 3,
+            "detection_rate": null,
+            "false_positive_signal": 1.0
+          }
+        }
+      },
+      "missed": [],
+      "findings": [
+        {
+          "dimension": "readability",
+          "severity": "medium",
+          "lines": [
+            1,
+            2,
+            3
+          ],
+          "issue": "Parameter 'd' and variables 'x'/'y' are cryptic single-letter names that convey no meaning about what they represent.",
+          "suggestion": "Rename 'd' to something like 'item' or 'product', and replace 'x'/'y' with a descriptive name like 'discounted_price'.",
+          "tag": "naming"
+        },
+        {
+          "dimension": "readability",
+          "severity": "medium",
+          "lines": [
+            2,
+            3
+          ],
+          "issue": "The literal 0.9 is unexplained \u2014 it likely represents a discount rate but is not named.",
+          "suggestion": "Extract to a named constant, e.g. DISCOUNT_RATE = 0.9.",
+          "tag": "magic_number"
+        },
+        {
+          "dimension": "readability",
+          "severity": "medium",
+          "lines": [
+            4,
+            5,
+            6,
+            7
+          ],
+          "issue": "The literals 1.2, 1, and 2 are unexplained type discriminators and multipliers with no named representation.",
+          "suggestion": "Use named constants or an enum for type values (e.g. TYPE_A = 1, TYPE_B = 2) and a named constant for the multiplier (e.g. MARKUP_RATE = 1.2).",
+          "tag": "magic_number"
+        },
+        {
+          "dimension": "structure",
+          "severity": "high",
+          "lines": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "issue": "Lines 2 and 3 compute the identical expression 'd[\"p\"] * 0.9' into two separate variables, and the two if-blocks then follow the same pattern differing only in which redundant variable they use.",
+          "suggestion": "Compute the discounted value once ('discounted = d[\"p\"] * 0.9') and collapse the two branches into a single check: 'if d[\"t\"] in (1, 2): return discounted * 1.2'.",
+          "tag": "duplication"
+        },
+        {
+          "dimension": "maintainability",
+          "severity": "high",
+          "lines": [
+            1,
+            2,
+            4,
+            8
+          ],
+          "issue": "No validation that 'd' contains the expected keys 'p' and 't'; missing keys will raise an unhandled KeyError.",
+          "suggestion": "Validate input keys at the start of the function or use .get() with sensible defaults and raise meaningful errors.",
+          "tag": "no_error_handling"
+        },
+        {
+          "dimension": "maintainability",
+          "severity": "medium",
+          "lines": [
+            1
+          ],
+          "issue": "The public function 'calc' has no docstring explaining its parameters, return value, or behaviour.",
+          "suggestion": "Add a docstring describing what the input dict is expected to contain (keys 'p' and 't') and what the function returns.",
+          "tag": "no_docstring"
+        },
+        {
+          "dimension": "maintainability",
+          "severity": "low",
+          "lines": [
+            1
+          ],
+          "issue": "Function 'calc' has no type hints on its parameter or return value.",
+          "suggestion": "Add type hints, e.g. 'def calc(item: dict) -> float:'.",
+          "tag": "missing_type_hints"
+        }
+      ],
+      "summary": "The function suffers from duplicated logic, unexplained magic numbers, cryptic naming, and no input validation, making it fragile and hard to maintain.",
+      "positive_note": "The function is short and self-contained, which means refactoring it into a clean, well-named, and validated form would be a quick and low-risk improvement."
+    },
+    {
+      "id": "mutable_default",
+      "description": "Classic mutable-default-argument bug.",
+      "score": {
+        "total_expected": 2,
+        "matched": 2,
+        "weighted_total": 4,
+        "weighted_matched": 4,
+        "total_findings": 3,
+        "unmatched_findings": 1,
+        "should_not_flag_hits": 0,
+        "detection_rate": 1.0,
+        "severity_weighted_recall": 1.0,
+        "false_positive_signal": 0.3333333333333333,
+        "by_dimension": {
+          "readability": {
+            "total_expected": 0,
+            "matched": 0,
+            "total_findings": 0,
+            "unmatched_findings": 0,
+            "detection_rate": null,
+            "false_positive_signal": null
+          },
+          "structure": {
+            "total_expected": 0,
+            "matched": 0,
+            "total_findings": 0,
+            "unmatched_findings": 0,
+            "detection_rate": null,
+            "false_positive_signal": null
+          },
+          "maintainability": {
+            "total_expected": 2,
+            "matched": 2,
+            "total_findings": 3,
+            "unmatched_findings": 1,
+            "detection_rate": 1.0,
+            "false_positive_signal": 0.3333333333333333
+          }
+        }
+      },
+      "missed": [],
+      "findings": [
+        {
+          "dimension": "maintainability",
+          "severity": "high",
+          "lines": [
+            1
+          ],
+          "issue": "The default argument `basket=[]` is a mutable list shared across all calls that omit `basket`. Items appended in one call persist into subsequent calls, causing silent state-accumulation bugs.",
+          "suggestion": "Use `None` as the default and initialise inside the body: `def add_item(item, basket=None): if basket is None: basket = []`",
+          "tag": "mutable_default_arg"
+        },
+        {
+          "dimension": "maintainability",
+          "severity": "low",
+          "lines": [
+            1
+          ],
+          "issue": "The public function `add_item` has no docstring explaining its purpose, parameters, or return value.",
+          "suggestion": "Add a docstring, e.g. `\"\"\"Append item to basket and return the updated basket.\"\"\"`",
+          "tag": "no_docstring"
+        },
+        {
+          "dimension": "maintainability",
+          "severity": "low",
+          "lines": [
+            1
+          ],
+          "issue": "The function `add_item` lacks type hints for its parameters and return value, reducing static-analysis coverage.",
+          "suggestion": "Add type hints, e.g. `def add_item(item: object, basket: list | None = None) -> list:`",
+          "tag": "missing_type_hints"
+        }
+      ],
+      "summary": "A tiny three-line function that contains the classic mutable-default-argument bug, plus minor documentation gaps.",
+      "positive_note": "The function body itself is admirably concise and correct \u2014 appending and returning the basket in two lines is clean, idiomatic Python."
+    },
+    {
+      "id": "dead_code_style",
+      "description": "Commented-out code, camelCase, an overly long line, unguarded file read.",
+      "score": {
+        "total_expected": 4,
+        "matched": 2,
+        "weighted_total": 5,
+        "weighted_matched": 3,
+        "total_findings": 6,
+        "unmatched_findings": 4,
+        "should_not_flag_hits": 2,
+        "detection_rate": 0.5,
+        "severity_weighted_recall": 0.6,
+        "false_positive_signal": 0.6666666666666666,
+        "by_dimension": {
+          "readability": {
+            "total_expected": 3,
+            "matched": 1,
+            "total_findings": 3,
+            "unmatched_findings": 2,
+            "detection_rate": 0.3333333333333333,
+            "false_positive_signal": 0.6666666666666666
+          },
+          "structure": {
+            "total_expected": 0,
+            "matched": 0,
+            "total_findings": 0,
+            "unmatched_findings": 0,
+            "detection_rate": null,
+            "false_positive_signal": null
+          },
+          "maintainability": {
+            "total_expected": 1,
+            "matched": 1,
+            "total_findings": 3,
+            "unmatched_findings": 2,
+            "detection_rate": 1.0,
+            "false_positive_signal": 0.6666666666666666
+          }
+        }
+      },
+      "missed": [
+        {
+          "dimension": "readability",
+          "tag": "inconsistent_style",
+          "severity": "low",
+          "lines": [
+            6
+          ]
+        },
+        {
+          "dimension": "readability",
+          "tag": "long_line",
+          "severity": "low",
+          "lines": [
+            6
+          ]
+        }
+      ],
+      "findings": [
+        {
+          "dimension": "readability",
+          "severity": "medium",
+          "lines": [
+            1
+          ],
+          "issue": "'os' and 'sys' are imported but never used, and all three imports are combined on one line against PEP 8.",
+          "suggestion": "Remove 'os' and 'sys', and place each import on its own line: 'import json'.",
+          "tag": "dead_code"
+        },
+        {
+          "dimension": "maintainability",
+          "severity": "high",
+          "lines": [
+            4
+          ],
+          "issue": "The file is opened without a context manager and without any error handling; the handle is never explicitly closed and a missing file raises an unhandled exception (acknowledged by the TODO comment).",
+          "suggestion": "Use 'with open(path) as f: data = f.read()' inside a try/except block catching FileNotFoundError and IOError to ensure the file is closed and errors are reported meaningfully.",
+          "tag": "no_error_handling"
+        },
+        {
+          "dimension": "readability",
+          "severity": "low",
+          "lines": [
+            5
+          ],
+          "issue": "Commented-out code referencing 'old_data' is left in the file.",
+          "suggestion": "Remove the commented-out line and rely on version control history if the old code needs to be recovered.",
+          "tag": "dead_code"
+        },
+        {
+          "dimension": "readability",
+          "severity": "medium",
+          "lines": [
+            6
+          ],
+          "issue": "'parsedConfigurationDictionaryThatHoldsEveryApplicationSettingValue' is excessively long and verbose, hurting readability.",
+          "suggestion": "Use a concise, descriptive name such as 'config' or 'config_data'.",
+          "tag": "naming"
+        },
+        {
+          "dimension": "maintainability",
+          "severity": "medium",
+          "lines": [
+            3
+          ],
+          "issue": "The public function 'load' has no docstring explaining its purpose, parameters, or return value.",
+          "suggestion": "Add a docstring describing what the function does, the expected type/format of 'path', and what it returns.",
+          "tag": "no_docstring"
+        },
+        {
+          "dimension": "maintainability",
+          "severity": "low",
+          "lines": [
+            3
+          ],
+          "issue": "The public function 'load' lacks type hints for its parameter and return value.",
+          "suggestion": "Add type hints, e.g. 'def load(path: str) -> dict:'.",
+          "tag": "missing_type_hints"
+        }
+      ],
+      "summary": "A small config-loading function with critical resource-management and error-handling gaps, unused imports, and a severely over-verbose variable name.",
+      "positive_note": "The function is admirably concise and focused on a single task, making it easy to understand its overall intent at a glance."
+    },
+    {
+      "id": "clean_baseline",
+      "description": "Well-named, typed, documented, validated. Almost nothing to flag \u2014 a false-positive trap.",
+      "score": {
+        "total_expected": 0,
+        "matched": 0,
+        "weighted_total": 0,
+        "weighted_matched": 0,
+        "total_findings": 0,
+        "unmatched_findings": 0,
+        "should_not_flag_hits": 0,
+        "detection_rate": null,
+        "severity_weighted_recall": null,
+        "false_positive_signal": null,
+        "by_dimension": {
+          "readability": {
+            "total_expected": 0,
+            "matched": 0,
+            "total_findings": 0,
+            "unmatched_findings": 0,
+            "detection_rate": null,
+            "false_positive_signal": null
+          },
+          "structure": {
+            "total_expected": 0,
+            "matched": 0,
+            "total_findings": 0,
+            "unmatched_findings": 0,
+            "detection_rate": null,
+            "false_positive_signal": null
+          },
+          "maintainability": {
+            "total_expected": 0,
+            "matched": 0,
+            "total_findings": 0,
+            "unmatched_findings": 0,
+            "detection_rate": null,
+            "false_positive_signal": null
+          }
+        }
+      },
+      "missed": [],
+      "findings": [],
+      "summary": "A concise, well-written utility function with no significant issues found.",
+      "positive_note": "The guard clause with a descriptive ValueError makes misuse immediately obvious and easy to debug."
+    }
+  ]
+}

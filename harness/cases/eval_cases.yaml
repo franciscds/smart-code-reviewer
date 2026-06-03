@@ -1,0 +1,165 @@
+# Labeled evaluation dataset for the Smart Code Reviewer.
+#
+# Each case plants known issues in a Python snippet. The harness measures how many the
+# reviewer catches (detection_rate), weighted by severity, and how noisy it is
+# (false_positive_signal). `should_not_flag` lines are clean lines used as traps.
+#
+# `tag` and `dimension` MUST come from the controlled vocabulary in src/prompts.py.
+# `lines` are 1-based and approximate; the matcher uses them only as a proximity tiebreak.
+
+cases:
+  - id: payment_secrets
+    description: Hardcoded credential, bare except, magic numbers in a payment path.
+    language: python
+    code: |
+      import requests
+
+      TAX = 0.0825
+
+      def process_payment(amount, user):
+          api_key = "sk_live_51H8xQ2eZvKYlo"
+          total = amount + amount * TAX
+          if total > 10000:
+              total = total - 100
+          try:
+              r = requests.post("https://api.pay.com/charge", json={"amt": total, "key": api_key})
+              return r.json()
+          except:
+              return None
+    expected_findings:
+      - dimension: maintainability
+        tag: hardcoded_config
+        severity: high
+        lines: [6]
+      - dimension: maintainability
+        tag: no_error_handling
+        severity: high
+        lines: [13]
+      - dimension: readability
+        tag: magic_number
+        severity: low
+        lines: [8, 9]
+      - dimension: maintainability
+        tag: missing_type_hints
+        severity: low
+        lines: [5]
+    should_not_flag: [3]   # TAX is a named constant — flagging it as a magic number is a false positive
+
+  - id: deep_nesting
+    description: Four levels of nesting and a compound condition.
+    language: python
+    code: |
+      def categorize(users):
+          result = []
+          for u in users:
+              if u is not None:
+                  if u.get("active"):
+                      if u.get("age") and u["age"] > 18:
+                          if u.get("country") == "AE":
+                              result.append(u["name"].upper())
+                          else:
+                              result.append(u["name"])
+          return result
+    expected_findings:
+      - dimension: structure
+        tag: deep_nesting
+        severity: medium
+        lines: [4, 5, 6, 7]
+      - dimension: structure
+        tag: complex_conditional
+        severity: low
+        lines: [6]
+      - dimension: maintainability
+        tag: missing_type_hints
+        severity: low
+        lines: [1]
+    should_not_flag: [2, 11]
+
+  - id: duplication_naming
+    description: Cryptic names and duplicated computation.
+    language: python
+    code: |
+      def calc(d):
+          x = d["p"] * 0.9
+          y = d["p"] * 0.9
+          if d["t"] == 1:
+              return x * 1.2
+          if d["t"] == 2:
+              return y * 1.2
+          return d["p"]
+    expected_findings:
+      - dimension: readability
+        tag: naming
+        severity: medium
+        lines: [1, 2, 3]
+      - dimension: structure
+        tag: duplication
+        severity: medium
+        lines: [2, 3]
+      - dimension: readability
+        tag: magic_number
+        severity: low
+        lines: [2, 5]
+    should_not_flag: [8]
+
+  - id: mutable_default
+    description: Classic mutable-default-argument bug.
+    language: python
+    code: |
+      def add_item(item, basket=[]):
+          basket.append(item)
+          return basket
+    expected_findings:
+      - dimension: maintainability
+        tag: mutable_default_arg
+        severity: high
+        lines: [1]
+      - dimension: maintainability
+        tag: missing_type_hints
+        severity: low
+        lines: [1]
+    should_not_flag: [2, 3]
+
+  - id: dead_code_style
+    description: Commented-out code, camelCase, an overly long line, unguarded file read.
+    language: python
+    code: |
+      import os, sys, json
+
+      def load(path):
+          data = open(path).read()  # TODO: handle missing file
+          # old_data = json.loads(data)  # not used anymore
+          parsedConfigurationDictionaryThatHoldsEveryApplicationSettingValue = json.loads(data)
+          return parsedConfigurationDictionaryThatHoldsEveryApplicationSettingValue
+    expected_findings:
+      - dimension: readability
+        tag: dead_code
+        severity: low
+        lines: [5]
+      - dimension: maintainability
+        tag: no_error_handling
+        severity: medium
+        lines: [4]
+      - dimension: readability
+        tag: inconsistent_style
+        severity: low
+        lines: [6]
+      - dimension: readability
+        tag: long_line
+        severity: low
+        lines: [6]
+    # No should_not_flag here: this snippet is issue-dense and has no unambiguously clean
+    # line (line 3 `def load` genuinely lacks a docstring and type hints).
+    should_not_flag: []
+
+  - id: clean_baseline
+    description: Well-named, typed, documented, validated. Almost nothing to flag — a false-positive trap.
+    language: python
+    code: |
+      def average(numbers: list[float]) -> float:
+          """Return the arithmetic mean of a non-empty list of numbers."""
+          if not numbers:
+              raise ValueError("numbers must not be empty")
+          return sum(numbers) / len(numbers)
+    expected_findings: []
+    should_not_flag: [1, 2, 3, 4, 5]
